@@ -47,12 +47,10 @@ public class PlayerMovement : MonoBehaviour
     {
         if (context.performed)
         {
-            // --- GROUND JUMP ---
             if (controller.isGrounded)
             {
                 velocity.y = Mathf.Sqrt(stats.jumpForce * -2.0f * gravity);
 
-                // --- FIX 2: Set the timer when we jump ---
                 jumpTimer = 0.2f;
 
                 if (animator != null)
@@ -61,7 +59,6 @@ public class PlayerMovement : MonoBehaviour
                     animator.SetBool(IsDoubleJumpingHash, false);
                 }
             }
-            // --- DOUBLE JUMP ---
             else if (!controller.isGrounded && upgrades.canDoubleJump)
             {
                 if (!doubleJumpUsed)
@@ -77,7 +74,6 @@ public class PlayerMovement : MonoBehaviour
         }
     }
 
-    // ... (OnSprint and OnDash remain unchanged) ...
     public void OnSprint(InputAction.CallbackContext context)
     {
         if (context.performed && upgrades.canSprint && !isSprinting) isSprinting = true;
@@ -108,7 +104,6 @@ public class PlayerMovement : MonoBehaviour
 
     void Update()
     {
-        // --- FIX 3: Count down the timer ---
         if (jumpTimer > 0)
         {
             jumpTimer -= Time.deltaTime;
@@ -116,8 +111,6 @@ public class PlayerMovement : MonoBehaviour
 
         bool isCurrentlyGrounded = controller.isGrounded;
 
-        // --- FIX 4: Only treat the player as grounded if the timer has expired ---
-        // If jumpTimer > 0, we force the logic to act as if we are NOT grounded yet.
         if (isCurrentlyGrounded && jumpTimer <= 0)
         {
             doubleJumpUsed = false;
@@ -133,7 +126,6 @@ public class PlayerMovement : MonoBehaviour
             if (velocity.y < 0) velocity.y = -2f;
         }
 
-        // --- DASH TIMER & RESET ---
         if (dashUsed)
         {
             if (dashTimer >= 0.5f)
@@ -173,8 +165,6 @@ public class PlayerMovement : MonoBehaviour
 
         if (animator != null)
         {
-            // --- FIX 5: Send the "Fake" grounded status to the animator too ---
-            // If we are in the grace period (jumpTimer > 0), tell animator we are NOT grounded
             bool effectiveGroundedStatus = isCurrentlyGrounded && jumpTimer <= 0;
 
             animator.SetBool(IsGroundedHash, effectiveGroundedStatus);
