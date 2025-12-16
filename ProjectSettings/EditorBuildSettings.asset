@@ -9,11 +9,14 @@ EditorBuildSettings:
     path: Assets/Scenes/Main Menu.unity
     guid: f12d0505e0998544482044dc0a0a5910
   - enabled: 1
-    path: Assets/Scenes/Story Scene.unity
-    guid: c3ea270867f4105499530723517b6ecf
-  - enabled: 1
-    path: Assets/Scenes/Main Scene.unity
+    path: Assets/Scenes/Forest.unity
     guid: 99c9720ab356a0642a771bea13969a05
+  - enabled: 1
+    path: Assets/Scenes/Fortress.unity
+    guid: ff9b448cb9ccfbc4a936644bb805f5b7
+  - enabled: 1
+    path: Assets/Scenes/Final Story.unity
+    guid: 4acea3674ef7dbd44b06a30955f70d29
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 01d5ea7bf3d9c5845ace0ed2af37a369, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

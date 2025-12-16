@@ -1,5 +1,6 @@
 using UnityEngine;
 
+// puts this on the player's weapon to hurt enemies
 public class DealDamage : MonoBehaviour
 {
     PlayerStats stats;
@@ -9,19 +10,26 @@ public class DealDamage : MonoBehaviour
         stats = GetComponent<PlayerStats>();
     }
 
+    // when the weapon hits something
     void OnTriggerEnter(Collider other)
     {
-        // Try to get the component
+        // 1. check if we hit a normal enemy
         AiDamage enemy = other.GetComponent<AiDamage>();
 
-        // ONLY deal damage if the enemy script was actually found
         if (enemy != null)
         {
             enemy.takeDamage(stats.attack);
         }
-    }
-    void Update()
-    {
-        
+        // 2. check if we hit the boss (needs a special tag)
+        else if (other.CompareTag("BossDamage"))
+        {
+            // look for the boss script in the parent object
+            BossDamage boss = other.GetComponentInParent<BossDamage>();
+
+            if (boss != null)
+            {
+                boss.takeDamage(stats.attack);
+            }
+        }
     }
 }

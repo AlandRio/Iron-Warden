@@ -2,120 +2,137 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+
+// handles hitting enemies, taking damage, and healing
 public class PlayerCombat : MonoBehaviour
 {
     private Animator m_Animator;
     private PlayerStats stats;
-    private PlayerInput playerInput; // Reference to the Input System
-    private bool hasMeleed = false;
-    private bool hasRanged = false;
+    private PlayerInput playerInput;
+
+    // combat variables
+    private bool hasMeleed = false; // check if we are already swinging
     private float meleeTimer = 0f;
-    private float rangedTimer = 0f;
+    public Collider weaponCollider; // the hitbox on the sword/fist
 
-    public Collider weaponCollider;
+    // health variables
     private float currentHealth;
-    [SerializeField] private playerHealth healthBar;
 
+    // regen variables
+    private float lastDamageTime;
+    private float regenDelay = 6f; // wait 6 seconds
+    private float regenRate = 1f;  // recover 1 hp per second
+
+    [SerializeField] private playerStatus statusBar;
+    [SerializeField] private AudioManager audioManager;
+
+    // setup
     void Start()
     {
         m_Animator = GetComponentInChildren<Animator>();
         stats = GetComponent<PlayerStats>();
-
-        // Automatically find the PlayerInput component on this object
         playerInput = GetComponent<PlayerInput>();
 
+        // set current health to max (stats.health)
         currentHealth = stats.health;
+
+        // initialize timer so you can regen immediately if needed
+        lastDamageTime = -regenDelay;
     }
 
+    // called when we press the attack button
     public void OnMelee(InputAction.CallbackContext context)
     {
-        // If input is disabled (dead), ignore button presses
         if (playerInput != null && !playerInput.enabled) return;
 
+        // only attack if we aren't already attacking
         if (context.performed && !hasMeleed)
         {
-            // Debug.Log("Melee Button Pressed!"); 
             m_Animator.SetTrigger("Melee");
-            weaponCollider.enabled = true;
+            weaponCollider.enabled = true; // turn on the damage box
             hasMeleed = true;
+            audioManager.PlaySFX(audioManager.punch);
         }
     }
 
-    public void OnRanged(InputAction.CallbackContext context)
-    {
-        // If input is disabled (dead), ignore button presses
-        if (playerInput != null && !playerInput.enabled) return;
-
-        if (context.performed && !hasRanged)
-        {
-            m_Animator.SetTrigger("Ranged");
-            hasRanged = true;
-        }
-    }
-
+    // gets called when something hurts us
     public void takeDamage(float damage)
     {
+        // 1. reset the regen timer because we got hit!
+        lastDamageTime = Time.time;
+
         if (currentHealth - damage > 0)
         {
             m_Animator.SetTrigger("Hit");
         }
         currentHealth -= damage;
 
-        // Ensure health bar updates if assigned
-        if (healthBar != null)
-            healthBar.updateHealthBar(currentHealth, stats.health);
+        if (statusBar != null)
+            statusBar.updateHealthBar(currentHealth, stats.health);
 
-        // Debug.Log("I took " + damage + " damage. HP: " + currentHealth);
-
+        // check if we died
         if (currentHealth <= 0)
         {
-            die();
+            if (!stats.dead) die();
         }
     }
 
+    // handles dying logic
     public void die()
     {
-        // 1. Disable controls immediately
-        if (playerInput != null) playerInput.DeactivateInput();
-
-        // 2. Play death animation
+        if (playerInput != null) playerInput.DeactivateInput(); // stop player moving
+        audioManager.PlaySFX(audioManager.death);
         m_Animator.SetTrigger("Die");
 
-        // 3. Wait 2 seconds, then call FinishDying
-        Invoke("FinishDying", 2f);
+        Invoke("FinishDying", 2f); // wait a bit then reset
     }
 
-    // Runs automatically after 2 seconds
     private void FinishDying()
     {
-        // Calls the method in PlayerStats that shows the cursor/game over menu
         stats.die();
     }
 
-    // Call this from your gameOver script
+    // resets everything so we can play again
     public void RespawnInput()
     {
-        currentHealth = stats.health;
+        currentHealth = stats.health; // reset to max health
+        lastDamageTime = Time.time;   // reset regen timer
 
-        if (healthBar != null)
-            healthBar.updateHealthBar(currentHealth, stats.health);
+        if (statusBar != null)
+            statusBar.updateHealthBar(currentHealth, stats.health);
 
-        // Reset Animation
         m_Animator.Play("Idle");
         m_Animator.ResetTrigger("Die");
 
-        // Re-enable controls
         if (playerInput != null) playerInput.ActivateInput();
     }
 
     void Update()
     {
+        // --- regeneration logic start ---
+        // only regen if we are alive and hurt
+        if (!stats.dead && currentHealth < stats.health)
+        {
+            // check if 6 seconds have passed since last hit
+            if (Time.time - lastDamageTime > regenDelay)
+            {
+                currentHealth += regenRate * Time.deltaTime;
+                if (currentHealth > stats.health) currentHealth = stats.health;
+                if (statusBar != null)
+                    statusBar.updateHealthBar(currentHealth, stats.health);
+            }
+        }
+        // --- regeneration logic end ---
+
+        // melee timer logic
         if (hasMeleed)
         {
+            // turn off the hitbox halfway through the swing
             if (meleeTimer > 0.5f)
             {
                 weaponCollider.enabled = false;
             }
+            // reset the swing so we can attack again
             if (meleeTimer > 1 / stats.attackSpeed)
             {
                 meleeTimer = 0;
@@ -124,18 +141,6 @@ public class PlayerCombat : MonoBehaviour
             else
             {
                 meleeTimer += 1.0f * Time.deltaTime;
-            }
-        }
-        if (hasRanged)
-        {
-            if (rangedTimer > 1 / stats.attackSpeed)
-            {
-                rangedTimer = 0;
-                hasRanged = false;
-            }
-            else
-            {
-                rangedTimer += 1.0f * Time.deltaTime;
             }
         }
     }
