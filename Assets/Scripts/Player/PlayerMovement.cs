@@ -102,20 +102,18 @@ public class PlayerMovement : MonoBehaviour
         // 2. standard & double jump
         if (context.performed)
         {
-            // --- modified logic start ---
-            // instead of checking isGrounded, we check if we have coyote time left
+            // check if we can still jump using coyote time
             if (coyoteTimeCounter > 0f)
             {
                 audioManager.PlaySFX(audioManager.click);
                 velocity.y = Mathf.Sqrt(stats.jumpForce * -2.0f * gravity);
 
                 jumpTimer = 0.2f;
-                coyoteTimeCounter = 0f; // important: consume coyote time immediately so we don't jump again
+                coyoteTimeCounter = 0f; // use up the timer so we dont jump again
 
                 if (animator != null) animator.SetTrigger("Jump");
             }
-            // double jump logic
-            // we check if coyote time is 0 (meaning we are truly in the air)
+            // if we are in the air try to double jump
             else if (upgrades.canDoubleJump && !doubleJumpUsed && jumpTimer <= 0)
             {
                 if (!doubleJumpUsed)
@@ -126,7 +124,6 @@ public class PlayerMovement : MonoBehaviour
                     if (animator != null) animator.SetTrigger("Jump");
                 }
             }
-            // --- modified logic end ---
         }
     }
 
@@ -169,7 +166,7 @@ public class PlayerMovement : MonoBehaviour
             if (!controller.isGrounded) dashAirUsed = true;
             dashUsed = true;
 
-            // dashing should probably consume coyote time to prevent jump-after-dash exploits
+            // reset coyote time when dashing
             coyoteTimeCounter = 0f;
         }
     }
